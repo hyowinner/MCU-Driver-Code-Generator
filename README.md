@@ -18,7 +18,10 @@ This project is a software package plugin MATLAB/Simulink that can work as a too
 ![Memory Section Viewer](https://github.com/hyowinner/MCU-Driver-Code-Generator/raw/master/Img/05.png)
 
 Befor you use it, just including all folders and their subfolders into MATLAB searching path.
+
 What' more, you need to mex all c mex S function from .c into .mex on your OS by run "mexAll"
+
+Note: before you mex, make sure you have installed C/C++ compiler such as Visual Studio 2013.
 
 
 If you want to learn more detailed about how to develop the toolbox, please visit https://ke.qq.com/course/270302?tuin=19e6c1ad
