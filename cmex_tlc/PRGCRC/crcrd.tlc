@@ -1,0 +1,33 @@
+%% File	   : crcrd.tlc
+%% Abstract:
+%%		Target file for the C-Mex S-function crcengstat.c
+%% Author  : Hyowinner @2016/6/30
+
+%implements "crcrd" "C"
+
+%% Function: BlockTypeSetup ===========================================
+%%
+%function BlockTypeSetup(block, system) void
+	%<LibAddToCommonIncludes("s6j3200io.h")>
+%endfunction %% BlockTypeSetup
+
+%% Function: BlockInstanceSetup ===========================================
+%%
+%function BlockInstanceSetup(block, system) void
+%assign ftype = GETFTYPE(block)
+	%<HyoBlockInstanceSetup("CRC", ftype, "definition", "prototype", "include")>
+%endfunction %% BlockInstanceSetup
+
+%% Function: Start ====================================================
+%%
+%function Start(block, system) Output
+   
+%endfunction %% Start
+
+%% Function: Outputs ===================================================
+%%
+%function Outputs(block, system) Output
+%assign ftype = GETFTYPE(block)
+    %assign y = LibBlockOutputSignal(0, "", "", 0)
+    %<y> = %<HyoOutputs("CRC", ftype,"call")>
+%endfunction %% Outputs

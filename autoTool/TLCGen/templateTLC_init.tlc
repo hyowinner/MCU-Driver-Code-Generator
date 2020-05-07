@@ -1,0 +1,33 @@
+%% File	   : %<sfcname>.tlc
+%% Abstract:
+%%		Target file for the C-Mex S-function %<sfcname>.c
+%% Author  : Hyowinner @%<create_time>
+
+%implements "%<sfcname>" "C"
+
+%% Function: BlockTypeSetup ===========================================
+%%
+%function BlockTypeSetup(block, system) void
+	%<LibAddToCommonIncludes("s6j3200io.h")>
+%endfunction %% BlockTypeSetup
+
+%% Function: BlockInstanceSetup ===========================================
+%%
+%function BlockInstanceSetup(block, system) void
+    %assign ftype = GETFTYPE(block)
+	%<HyoBlockInstanceSetup("%<periname>", ftype, "%<section1>", "%<section2>", "%<section3>")>
+%endfunction %% BlockInstanceSetup
+
+%% Function: Start ====================================================
+%%
+%function Start(block, system) Output
+%% mode = initReg
+    %assign ftype = GETFTYPE(block)
+    %<HyoOutputs("%<periname>", ftype, "call")>
+%endfunction %% Start
+
+%% Function: Outputs ===================================================
+%%
+%function Outputs(block, system) Output
+
+%endfunction %% Outputs

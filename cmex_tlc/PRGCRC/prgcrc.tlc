@@ -1,0 +1,33 @@
+%% File	   : prgcrc.tlc
+%% Abstract:
+%%		Target file for the C-Mex S-function prgcrc.c
+%% Author  : Hyowinner @2016/6/27
+
+%implements "prgcrc" "C"
+
+
+%% Function: BlockTypeSetup ===========================================
+%%
+%function BlockTypeSetup(block, system) void
+	%<LibAddToCommonIncludes("s6j3200io.h")>
+%endfunction %% BlockTypeSetup
+
+%% Function: BlockInstanceSetup ===========================================
+%%
+%function BlockInstanceSetup(block, system) void
+%assign ftype = GETFTYPE(block)
+	%<HyoBlockInstanceSetup("CRC", ftype, "definition", "prototype", "include")>
+%endfunction %% BlockInstanceSetup
+
+%% Function: Start ====================================================
+%%
+%function Start(block, system) Output
+%assign ftype = GETFTYPE(block)
+    %<HyoOutputs("CRC", ftype, "call")>
+%endfunction %% Start
+
+%% Function: Outputs ===================================================
+%%
+%function Outputs(block, system) Output
+	
+%endfunction %% Outputs

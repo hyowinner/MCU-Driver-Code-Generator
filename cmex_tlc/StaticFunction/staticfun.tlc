@@ -1,0 +1,53 @@
+%implements staticfun "C"
+
+%% Function: blockTypeSetup ==========================================================
+%%
+%% Purpose:
+%%      Add some macro defines .
+%%
+%function BlockTypeSetup(block, system) void
+
+%endfunction
+
+
+%% Function: Start ==========================================================
+%%
+%% Purpose:
+%%   
+%%     these code will appear at model.c initialization function
+%%
+%function Start(block, system) Output
+    /* If need user can add custom initialize code here */
+%endfunction
+
+
+%% Function: Outputs ==========================================================
+%%
+%% Purpose:
+%%   
+%%     these code will appear at model.c step function
+%%
+%function Outputs(block, system) Output
+    /* put your code on there */
+  %% Call the downstream function call subsystem
+  %assign t_fcnname = SFcnParamSettings.r_fcnname
+  %<t_fcnname>();
+  %assign callIdx = 0  
+  %assign ret = "void"
+  %assign argu = "void" 
+  %openfile tmpBuf
+     %<LibBlockExecuteFcnCall(block, callIdx)>\
+  %closefile tmpBuf
+  %if WHITE_SPACE(tmpBuf)
+        %assign tmpBuf = "/*  Nothing is connected so nothing generated.  */"
+  %else
+        %assign tmpBuf = "static %<ret> %<t_fcnname>(%<argu>){ \n" + tmpBuf + "\n }"
+
+  %endif
+  
+  %assign cFile = LibGetModelDotCFile()
+  %<LibSetSourceFileSection(cFile, "Functions", tmpBuf)>\
+
+
+%endfunction
+

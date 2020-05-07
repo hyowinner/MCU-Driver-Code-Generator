@@ -1,0 +1,34 @@
+%% File	   : pcmpwm.tlc
+%% Abstract:
+%%		Target file for the C-Mex S-function pcmpwm.c
+%% Author  : Hyowinner @2016/07/03
+
+%implements "pcmpwm" "C"
+
+%% Function: BlockTypeSetup ===========================================
+%%
+%function BlockTypeSetup(block, system) void
+	%<LibAddToCommonIncludes("s6j3200io.h")>
+%endfunction %% BlockTypeSetup
+
+%% Function: BlockInstanceSetup ===========================================
+%%
+%function BlockInstanceSetup(block, system) void
+    %assign ftype = GETFTYPE(block)
+	%<HyoBlockInstanceSetup("PCMPWM", ftype, "definition", "prototype", "include")>
+%endfunction %% BlockInstanceSetup
+
+%% Function: Start ====================================================
+%%
+%function Start(block, system) Output
+%% mode = initReg
+    %assign ftype = GETFTYPE(block)
+   %<HyoOutputs("PCMPWM", ftype, "call")>
+%endfunction %% Start
+
+%% Function: Outputs ===================================================
+%%
+%function Outputs(block, system) Output
+
+%endfunction %% Outputs
+

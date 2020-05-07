@@ -1,0 +1,34 @@
+%% File	   : rtc.tlc
+%% Abstract:
+%%		Target file for the C-Mex S-function rtc.c
+%% Author  : Hyowinner @2016/07/10
+
+%implements "rtc" "C"
+
+%% Function: BlockTypeSetup ===========================================
+%%
+%function BlockTypeSetup(block, system) void
+	%<LibAddToCommonIncludes("s6j3200io.h")>
+%endfunction %% BlockTypeSetup
+
+%% Function: BlockInstanceSetup ===========================================
+%%
+%function BlockInstanceSetup(block, system) void
+    %assign ftype = GETFTYPE(block)
+	%<HyoBlockInstanceSetup("RTC", ftype, "definition", "prototype", "include")>
+%endfunction %% BlockInstanceSetup
+
+%% Function: Start ====================================================
+%%
+%function Start(block, system) Output
+%% mode = initReg
+    %assign ftype = GETFTYPE(block)
+    %<HyoOutputs("RTC", ftype, "call")>
+%endfunction %% Start
+
+%% Function: Outputs ===================================================
+%%
+%function Outputs(block, system) Output
+
+%endfunction %% Outputs
+
