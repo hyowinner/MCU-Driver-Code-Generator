@@ -4,3 +4,7 @@ This project is a software package plugin MATLAB/Simulink that can work as a too
   - MCU Pin Looker
   - Memory Map Viewer
   - Static Function Generator block
+
+
+
+Befor you use it, just including all folders and their subfolders into MATLAB searching path.
