@@ -1,0 +1,43 @@
+%% SYSTLC: System Target File for S6J3200 Series MCU Target TMF: none MAKE: none EXTMODE: none
+%% ==============================================================================================
+%%                     Hardware Support Package Development Course 
+%% ==============================================================================================
+%% 
+%% Copyright (C) 2016 Hyowinner All Rights Reserved. 
+%% 
+%% ==========================================================================
+%%  
+%% History
+%% Date        Ver   Description
+%% 2016-6-28   0.1   first version 
+
+%% 
+%% ==========================================================================
+
+%selectfile NULL_FILE
+%assign CodeFormat = "Embedded-C"
+%assign TargetType = "RT"
+%assign Language   = "C"
+%assign AutoBuildProcedure = !GenerateSampleERTMain
+%include "Hyo_tlc_lib.tlc"
+%include "codegenentry.tlc"
+
+/%
+  BEGIN_RTW_OPTIONS
+
+  rtwoptions = Hyo_getrtwoptions(rtwoptions);
+
+
+  %----------------------------------------%
+  % Configure RTW code generation settings %
+  %----------------------------------------%
+
+  rtwgensettings.BuildDirSuffix = '_S6J3200_Hyo';
+  rtwgensettings.DerivedFrom = 'ert.tlc';
+  rtwgensettings.Version = '1';
+  rtwgensettings.SelectCallback = ['Hyo_callback_handler(hDlg, hSrc)'];
+  rtwgensettings.PostApplyCallback  = ['Hyo_postapply_callback(hDlg, hSrc)'];
+
+  END_RTW_OPTIONS 
+ %/
+

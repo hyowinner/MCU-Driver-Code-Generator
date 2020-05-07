@@ -1,0 +1,190 @@
+%% ==============================================================================================
+%%         Hardware Support Package Course in Hyowinner's Simulink School 
+%% ==============================================================================================
+%% 
+%% Copyright (C) 2016 Hyowinner All Rights Reserved. 
+%%                                                                                                 
+%% ==========================================================================
+%%  
+%% History
+%%
+%% History
+%% Date        Ver   Description
+%% 2016-09-16  1.0   first version
+%% 
+%% 
+%% ==========================================================================
+
+%selectfile NULL_FILE
+
+%function FcnMultiTaskingMain_Hyo() void
+  
+  %if GenerateSampleERTMain
+    %assign ::CompiledModel.GenerateSampleERTMain = TLC_FALSE
+    %warning Overriding example ert_main.c!
+  %endif
+
+  %assign cFile = LibCreateSourceFile("Source", "Custom", "Hyo_main")
+  %openfile tmpbuf
+  #include "..\\..\\regheader\\s6j3200\\s6j3200.h" 
+  #include "Hyo_interrupt.h"
+  #include "%<LibGetMdlSrcBaseName()>.h"
+  #include "%<LibGetMdlSrcBaseName()>_private.h"
+  %closefile tmpbuf
+  %<LibSetSourceFileSection(cFile,"Includes", tmpbuf)>
+
+  %openfile tmpbuf
+  %assign tid01Eq = LibGetTID01EQ()
+  %assign fcnReturns = "void"
+  %assign fcnName = "rt_OneStep"
+  %assign fcnParams = "void"
+
+  %<fcnReturns> %<fcnName>(%<fcnParams>)
+  {
+    %<LibERTMainDeclareVariables(TLC_FALSE,TLC_TRUE)>
+    
+    /* Check base rate for overrun */
+    if (OverrunFlags[0]) {
+      %<LibSetRTModelErrorStatus("\"Overrun\"")>;
+      return;
+    }
+    OverrunFlags[0] = TRUE;
+    
+    /* Check baserate overrun, set rates that need to run this time step*/ 
+    %<LibCallSetEventForThisBaseStep("eventFlags")>\
+
+    /* Step the model for base rate */
+    %<LibCallModelStep(0)>\
+    
+    OverrunFlags[0] = FALSE;
+    
+    %if LibGetNumSyncPeriodicTasks() > 2
+      /* Step the model for any subrate */
+      for (i = %<1+tid01Eq>; i < %<LibNumSynchronousSampleTimes()>; i++) {
+       %if InlineSetEventsForThisBaseRateFcn
+         /* If task "i" is running, don't run any lower priority task */
+         if (OverrunFlags[i]) return; 
+       %endif
+      if (eventFlags[i]) {
+         %if !InlineSetEventsForThisBaseRateFcn
+           if (OverrunFlags[i]) {
+             %<LibSetRTModelErrorStatus("\"Overrun\"")>;
+             return;
+           }
+         %endif
+           OverrunFlags[i] = TRUE;
+
+        switch(i) {
+        %foreach idx = LibGetNumSyncPeriodicTasks() - 1
+          %assign tid = idx + 1 + tid01Eq
+		case %<tid> :
+		   %<LibCallModelStep(tid)>\
+		break;
+	    %endforeach
+	      default : 
+	      break;
+	    }
+
+        OverrunFlags[i] = FALSE;
+          %if InlineSetEventsForThisBaseRateFcn
+            eventFlags[i] = FALSE;
+          %endif
+          
+      }
+    }
+   %else
+     %assign tid = LibNumSynchronousSampleTimes()-1
+     %if InlineSetEventsForThisBaseRateFcn
+       /* If task "1" is running, don't run any lower priority task */
+       if (OverrunFlags[1]) return; 
+     %endif
+     /* Step the model for subrate */
+     if (eventFlags[%<tid>]) {
+        %if !InlineSetEventsForThisBaseRateFcn
+          if (OverrunFlags[%<tid>]) {
+            %<RTMSetErrStat("\"Overrun\"")>;
+            return;
+          }
+        %endif
+        OverrunFlags[%<tid>] = TRUE;
+        
+        /* Step the model for subrate %<tid> */
+        %<LibCallModelStep(tid)>\
+        
+        /* Indicate task complete for subrate */
+        OverrunFlags[%<tid>] = FALSE; 
+        %if InlineSetEventsForThisBaseRateFcn
+          eventFlags[%<tid>] = FALSE;
+        %endif
+      }   
+   %endif
+
+  }
+  
+    %assign fcnReturns = "int_T"
+    %assign fcnName = "main"
+    %assign fcnParams = "int_T argc, const char *argv[]"
+ 
+  %<fcnReturns> %<fcnName>(%<fcnParams>)
+  {   
+    /* Enable PORT input after release lock with writing key code bits */
+    __asm("CPSID I");      /* Disable IRQ before Port operation  */
+    GPIO_KEYCDR = 0;    
+    GPIO_KEYCDR = 1;
+    GPIO_KEYCDR = 2;
+    GPIO_KEYCDR = 3;
+    GPIO_PORTEN_GPORTEN = 1;    
+    __asm("CPSIE I");      /* Enable IRQ after Port operation  */
+    
+    /* Initialize model */
+    %<LibCallModelInitialize()>\
+    
+    /% Later used when the other initiallization block created
+    %if CompiledModel.system_record.ini_flag == 1
+    /* Call other initialize function */
+    %<CompiledModel.system_record.ini_buf>\  
+    %endif
+    %/
+    
+    /* Register rt_OneStep() to  "Sub Clock Timer(32.768kHz|30.52us) -- SCT Sub OSC IRQ" ISR.  */
+    interrupt_register(__rt_OneStep, 311, 0);           
+    /* Initialize MCU Configuration */
+    interrupt_init();
+
+    /* It executes at the base rate(%<SampleTime[0].ClockTickStepSize>s) of the model. */
+    /* SYSC0 Key Code: 0x5CACCE55 */
+    %assign retval = FEVAL("timerValCal")
+    SYSC0_PROTKEYR = 0x5CACCE55;
+	SYSC_SOCTTRGR = 2;              /* Stop Sub Clock Timer */
+	SYSC0_PROTKEYR = 0x5CACCE55;
+	SYSC_SOCTCNTR = 1;              /* Continuous Mode  */
+	SYSC0_PROTKEYR = 0x5CACCE55;
+	SYSC_SOCTCPR_PSCL = %<CAST("Number",retval[1])>;
+	SYSC0_PROTKEYR = 0x5CACCE55;
+	SYSC_SOCTCPR_CMPR = %<CAST("Number",retval[0])>;
+	SYSC0_PROTKEYR = 0x5CACCE55;
+	SYSC_SOCTICLR = 1;              /* Clear Interrupt Flag  */
+	SYSC0_PROTKEYR = 0x5CACCE55;
+    SYSC_SOCTINTER = 1;             /* Enable Interrupt  */
+	SYSC0_PROTKEYR = 0x5CACCE55;
+    SYSC_SOCTTRGR = 1;              /* Start Sub Clock Timer  */
+    
+    
+
+    /* Wait for Sub Clock Timer interrupt calling the model_step function */
+    while(1)
+    {
+        /* If WatchDog Counter is greater than lower limit then feed it */
+        if (HWDG_CNT > HWDG_RUNLLS)
+        {
+            __asm("CPSID I");               /* Disable IRQ before Feeding Watch Dog  */
+            HWDG_TRG0 = HWDG_TRG0CFG;
+            HWDG_TRG1 = HWDG_TRG1CFG;       /* clear WatchDog Counter with  specified register  */
+            __asm("CPSIE I");               /* Enable IRQ after Feeding Watch Dog  */
+        }
+    }
+  }
+  %closefile tmpbuf
+  
+  %<LibSetSourceFileSection(cFile,"Functions",tmpbuf)>
+%endfunction

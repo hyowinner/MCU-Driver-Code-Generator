@@ -1,0 +1,202 @@
+%% ==============================================================================================
+%%         Hardware Support Package Course in Hyowinner's Simulink School 
+%% ==============================================================================================
+%% 
+%% Copyright (C) 2016 Hyowinner All Rights Reserved. 
+%%                                                                                                 
+%% ==========================================================================
+%%  
+%% History
+%% Date        Ver   Description
+%% 2016-09-08  1.0   first version
+%% 
+%% ==========================================================================
+
+%selectfile NULL_FILE
+
+%function FcnGenInterruptHeaderFile() Output
+    %assign cFile = LibCreateSourceFile("Header", "Custom", "Hyo_interrupt")
+    /%
+    %assign BufCont = "/* Definition for DefaultISRHandle  */"
+    %foreach idx = 512
+        %assign BufCont = BufCont + "\n#define INTERRUPTS_IRQ_ISR_%<idx>        0xFFFFFFFF"
+    %endforeach
+    %assign BufCont = BufCont + "\n/* End of Definition for DefaultISRHandle  */\n"
+    %<CodeGenLocation(cFile, BufCont, "Definitions")> 
+
+    %assign BufCont = "/* Definition for DefaultISRPriority  */"
+    %foreach idx = 512
+        %assign BufCont = BufCont + "\n#define INTERRUPTS_IRQ_LEVEL_%<idx>      31"
+    %endforeach
+    %assign BufCont = BufCont + "\n/* End of Definition for DefaultISRPriority  */\n"
+    %<CodeGenLocation(cFile, BufCont, "Definitions")> 
+
+    %assign BufCont = "/* Definition for DefaultISRNumber  */"
+    %foreach idx = 512
+        %assign BufCont = BufCont + "\n#define INTERRUPTS_IRQ_NUMBER_%<idx>      %<idx>"
+    %endforeach
+    %assign BufCont = BufCont + "\n/* End of Definition for DefaultISRNumber  */\n"
+    %<CodeGenLocation(cFile, BufCont, "Definitions")> 
+    %/
+    %openfile BufCont
+    #include "..\\..\\regheader\\s6j3200\\s6j3200.h" 
+    %closefile BufCont
+    %<includeGen(cFile, BufCont)>
+    
+    %assign BufCont = "static uint_io16_t usrIrqCnt;"   
+    %<varDefinitionGen(cFile, BufCont)>
+
+    %openfile tempbuf
+    typedef void (*irq_func_ptr_t)(void);
+    /* declare a struct to store one IRQ infomation  */
+    typedef struct stc_irq_info
+    {
+        irq_func_ptr_t  funptIrqCb;             // function pointer to ISR callback
+        uint_io16_t        u16irqVecNum;        // number in IRQ vector table(IRQ Channel)
+        uint_io8_t         u8priority;          // priority [0-31]
+    } stc_irq_info_t;
+    %closefile tempbuf
+    %<varTypedefGen(cFile, tempbuf)>
+
+    %openfile tempbuf
+    static stc_irq_info_t usrIrqInfo[512];
+    %closefile tempbuf
+    %<varDefinitionGen(cFile, tempbuf)>
+
+    %assign BufCont = "void interrupt_init(void);\n"
+    %<funcDeclareGen(cFile, BufCont)>
+    
+    %assign BufCont = "void interrupt_register(void);\n"
+    %<funcDeclareGen(cFile, BufCont)>
+
+    %assign BufCont = "void dummyHandle(void);\n"
+    %<funcDeclareGen(cFile, BufCont)>
+
+    %openfile tempbuf
+    /* This is an empty IRQ Callback for default */
+    void dummyHandle(void)
+    {
+        while (1)
+        {
+            /* Wait for Hardware Watchdog reset */
+        }
+    }
+    %closefile tempbuf
+    %<funcDefinitionGen(cFile, tempbuf)>
+
+    %openfile tempbuf
+    /* This function register user IRQ and add it to static usrIrqInfo array. */
+    void interrupt_register(irq_func_ptr_t funptIrqCb, uint16_t u16irqVecNum, uint8_t u8priority)
+    {
+        if(usrIrqCnt < 512)           
+        {
+            usrIrqInfo[usrIrqCnt].funptIrqCb = funptIrqCb;
+            usrIrqInfo[usrIrqCnt].u16irqVecNum = u16irqVecNum;
+            usrIrqInfo[usrIrqCnt].u8priority = u8priority;
+            usrIrqCnt++;
+        }
+    }
+    %closefile tempbuf
+    %<funcDefinitionGen(cFile, tempbuf)>
+    
+    %% create buffer of implenmetation of interrupt_init
+    %openfile intrbuf
+    void interrupt_init(void)
+    {
+        uint_io16_t iterIdx;
+        uint_io16_t vecNumGrp;
+        uint_io8_t  PrioGrp;
+        uint_io16_t irqCh;
+        volatile un_irc0_irqvan_t * irqVecAddress = &IRC0.unIRQVA0;     // Vector Address Pointer
+        volatile un_irc0_irqpl0_t * irqPrioLvl = &IRC0.unIRQPL0;        // Priority Pointer
+        volatile un_irc0_irqces0_t * irqEnable = &IRC0.unIRQCES0;       // Enable IRQ with number in vector table
+
+        /* Unlock Interrupt Controller for write access  */
+        IRC0_UNLOCK = 0x17ACC911;
+
+        /*  Initialize each IRQ handle with default handle(dummyHandle)  */
+        for (iterIdx = 0; iterIdx < 512; iterIdx ++)
+        {
+            irqVecAddress[iterIdx].u32Register = (uint_io32_t)dummyHandle;
+        }
+
+        /* Config user specified IRQ info  */
+        for (iterIdx = 0; iterIdx < usrIrqCnt; iterIdx ++)
+        {
+            irqCh = usrIrqInfo[iterIdx].u16irqVecNum;               // Get Current Channel
+            irqVecAddress[irqCh].u32Register = (uint_io32_t *)usrIrqInfo[iterIdx].funptIrqCb;
+            vecNumGrp = irqCh/4;                                    // Each register has 4 channel priority settings
+            irqPrioLvl[vecNumGrp].au8Byte[irqChx%4] = usrIrqInfo[iterIdx].u8priority;
+            PrioGrp = irqCh/32;                                     // Each register has 32 channel enable settings
+            irqEnable[PrioGrp].u32Register = 1<<(irqCh%32);       // Enable specified IRQ channel
+        }
+        /* Enable IRQ Processing block of Interrupt Controller  */
+        IRC0_CSR_IRQEN = 1;
+
+        /* After initialization, lock Interrupt Controller for write access  */
+        IRC0_UNLOCK = 0x17B10C11;
+    }
+    %closefile intrbuf
+    %<funcDefinitionGen(cFile, intrbuf)>
+
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% This function generate code section "BufCont" to the "section" of FileH.
+%% Hyowinner @ 2016/9/8
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function CodeGenLocation(FileH, BufCont, Section) Output
+  %openfile tmpbuf
+  %<BufCont>
+  %closefile tmpbuf
+  %<LibSetSourceFileSection(FileH, Section, tmpbuf)>
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% This function generate function declaration section "BufCont" to the "Declarations"
+%% section of FileH.
+%% Hyowinner @ 2016/9/8
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function funcDeclareGen(FileH, BufCont) Output
+    %openfile tempbuf
+    %<BufCont>
+    %closefile tempbuf
+    %<LibSetSourceFileSection(FileH, "Declarations", tempbuf)>
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% This function generate function definition section "BufCont" to the "Functions"
+%% section of FileH.
+%% Hyowinner @ 2016/9/8
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function funcDefinitionGen(FileH, BufCont) Output
+    %<LibSetSourceFileSection(FileH, "Functions", BufCont)>
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% This function generate variable declaration "BufCont" to the "Definitions"
+%% section of FileH.
+%% Hyowinner @ 2016/9/8
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function varDefinitionGen(FileH, BufCont) Output
+    %<LibSetSourceFileSection(FileH, "Definitions", BufCont)>
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% This function generate variable type definitions "BufCont" to the "Typedefs"
+%% section of FileH.
+%% Hyowinner @ 2016/9/8
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function varTypedefGen(FileH, BufCont) Output
+    %<LibSetSourceFileSection(FileH, "Typedefs", BufCont)>
+%endfunction
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% This function generate variable type definitions "BufCont" to the "Includes"
+%% section of FileH.
+%% Hyowinner @ 2016/9/8
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%function includeGen(FileH, BufCont) Output
+    %<LibSetSourceFileSection(FileH, "Includes", BufCont)>
+%endfunction
+

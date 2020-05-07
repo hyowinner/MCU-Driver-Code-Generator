@@ -1,0 +1,65 @@
+%% File	   : Hyo_tlc_lib.tlc
+%% Abstract:
+%%		Common function for block tlc file.
+%% Author  : Hyowinner @2016/6/29
+
+
+%function HyoBlockTypeSetup(periname, ftype, section) void
+%% HyoBlockTypeSetup("CRC", "_Init","include")
+    %assign ret = FEVAL("coderead", periname, ftype, section)
+    %if ISEMPTY(ret)||ISEQUAL(0, ret)
+        %assign Errstr = "Code Generated is invalid for %<periname>%<ftype>: %<section>."
+        %error %<Errstr>
+    %endif
+    %return ret
+%endfunction
+
+%function HyoBlockInstanceSetup(periname, ftype, section1, section2, section3) void
+    %% Definition  ftype = ftype + %<datenum>
+    %assign ret = FEVAL("coderead", periname, ftype, section1)
+    %% Prototype
+    %assign ret2 = FEVAL("coderead", periname, ftype, section2)
+    %% include
+    %assign ret3 = FEVAL("coderead", periname, ftype, section3)
+    %if ISEMPTY(ret)||ISEQUAL(0, ret)
+        %assign Errstr = "Code Generated is invalid for %<periname>%<ftype>: %<section1>."
+        %error %<Errstr>
+    %endif
+    %if ISEMPTY(ret2)||ISEQUAL(0, ret2)
+        %assign Errstr = "Code Generated is invalid for %<periname>%<ftype>: %<section2>."
+        %error %<Errstr>
+    %endif
+    %if ISEMPTY(ret3)||ISEQUAL(0, ret3)
+        %assign Errstr = "Code Generated is invalid for %<periname>%<ftype>: %<section3>."
+        %error %<Errstr>
+    %endif
+    %openfile buf = "%<periname>%<ftype>.h"
+    %selectfile buf
+    %<ret3>
+    /* Welcome to Hyowinner's Simulink School : http://www.chuanke.com/s3570260.html */
+    %<ret2>
+    /* Hyowinner Copyright 2016-2017 */
+    %<ret>
+    %closefile buf
+    %assign filename = "%<periname>%<ftype>.h"
+    %<LibAddToCommonIncludes(filename)>
+%endfunction
+
+%function HyoOutputs(periname, ftype, section) void 
+    %assign ret = FEVAL("coderead", periname, ftype, section)
+    %if ISEMPTY(ret)||ISEQUAL(0, ret)
+        %assign Errstr = "Code Generated is invalid for %<periname>%<ftype>: %<section>."
+        %error %<Errstr>
+    %endif
+    %% to make "(" combinate with "argin)" delete "\n"      2016/6/30
+    %assign retw = FEVAL("strrep", ret, "\n","")
+    %return retw
+%endfunction
+
+%function GETFTYPE(block) void
+%% Get type from block parameter g_pv(r_pv)
+%% Added @2106/7/6 
+    %assign r_pv = block.SFcnParamSettings.r_pv
+    %assign postname = FEVAL("get_funcpostname", r_pv)
+    %return postname
+%endfunction

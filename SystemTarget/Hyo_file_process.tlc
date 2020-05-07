@@ -1,0 +1,39 @@
+%% ==============================================================================================
+%%                     Hardware Support Package Development Course 
+%% ==============================================================================================
+%% 
+%% Copyright (C) 2016 Hyowinner All Rights Reserved. 
+%% 
+%% ==========================================================================
+%%  
+%% History
+%% Date        Ver   Description
+%% 2016-6-28   0.1   first version 
+%% 2016-9-08   0.2   Add Interrupt Mechnism
+%% 
+%% ==========================================================================
+
+%selectfile NULL_FILE
+
+%assign ERTCustomFileTest = TLC_TRUE
+
+%if EXISTS("ERTCustomFileTest") && ERTCustomFileTest == TLC_TRUE
+  
+  %% Need to set the template compliance flag before you can use the API
+  %<LibSetCodeTemplateComplianceLevel(1)>
+
+  %% Call Hyo_interrupt.tlc to generate C code that construct interrupt structure.
+  %include "Hyo_interrupt.tlc"
+  %<FcnGenInterruptHeaderFile()>
+
+  %% Create a main function.  
+  %if LibIsSingleRateModel() || LibIsSingleTasking()
+    %include "Hyo_srmain.tlc"
+    %<FcnSingleTaskingMain_Hyo()>
+
+  %else
+    %include "Hyo_mrmain.tlc"
+    %<FcnMultiTaskingMain_Hyo()>
+  %endif
+
+%endif
