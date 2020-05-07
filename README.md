@@ -8,3 +8,4 @@ This project is a software package plugin MATLAB/Simulink that can work as a too
 
 
 Befor you use it, just including all folders and their subfolders into MATLAB searching path.
+What' more, you need to mex all c mex S function from .c into .mex on your OS by run "mexAll"
