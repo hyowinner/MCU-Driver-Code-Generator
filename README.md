@@ -11,6 +11,12 @@ This project is a software package plugin MATLAB/Simulink that can work as a too
 ![Driver Block in Simulink Library](https://github.com/hyowinner/MCU-Driver-Code-Generator/raw/master/Img/01.png)
 
 
+![Simulink Model that use the driver block](https://github.com/hyowinner/MCU-Driver-Code-Generator/raw/master/Img/02.png)
+
+![Generate a MCU chip view in Simulink](https://github.com/hyowinner/MCU-Driver-Code-Generator/raw/master/Img/04.png)
+
+![Memory Section Viewer](https://github.com/hyowinner/MCU-Driver-Code-Generator/raw/master/Img/05.png)
+
 Befor you use it, just including all folders and their subfolders into MATLAB searching path.
 What' more, you need to mex all c mex S function from .c into .mex on your OS by run "mexAll"
 
